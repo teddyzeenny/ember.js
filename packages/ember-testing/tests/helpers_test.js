@@ -39,7 +39,36 @@ test("Ember.Application#setupForTesting", function() {
   });
 
   equal(App.__container__.lookup('router:main').location.implementation, 'none');
-  equal(window.EMBER_APP_BEING_TESTED, App);
+});
+
+test("Ember.registerTestHelper/unregisterTestHelper", function() {
+  expect(3);
+
+  window.boot = 'originalMethod';
+
+  Ember.run(function() {
+    App = Ember.Application.create();
+    App.setupForTesting();
+  });
+
+  Ember.registerTestHelper('boot', function(CurrentApp) {
+    Ember.run(function() {
+      CurrentApp.advanceReadiness();
+      equal(CurrentApp, App, "App successfully injected into helper");
+    });
+    return window.wait();
+  });
+
+  App.injectTestHelpers();
+
+  equal(typeof window.boot, 'function', "boot helper successfully injected");
+
+  window.boot().then(function() {
+    App.removeTestHelpers();
+    equal(window.boot, 'originalMethod');
+
+    Ember.unregisterTestHelper('boot');
+  });
 });
 
 test("helpers can be chained", function() {

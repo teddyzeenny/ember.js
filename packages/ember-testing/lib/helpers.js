@@ -1,40 +1,39 @@
-/*globals EMBER_APP_BEING_TESTED */
+require('ember-testing/setup');
 
 var Promise = Ember.RSVP.Promise,
-    pendingAjaxRequests = 0,
-    originalFind;
+    registerTestHelper = Ember.registerTestHelper;
 
-function visit(url) {
-  Ember.run(EMBER_APP_BEING_TESTED, EMBER_APP_BEING_TESTED.handleURL, url);
-  return wait();
-}
+registerTestHelper('visit', function(App, url) {
+  Ember.run(App, App.handleURL, url);
+  return window.wait();
+});
 
-function click(selector) {
+registerTestHelper('click', function(App, selector) {
   Ember.run(function() {
     Ember.$(selector).click();
   });
-  return wait();
-}
+  return window.wait();
+});
 
-function fillIn(selector, text) {
-  var $el = find(selector);
+registerTestHelper('fillIn', function(App, selector, text) {
+  var $el = window.find(selector);
   Ember.run(function() {
     $el.val(text);
   });
-  return wait();
-}
+  return window.wait();
+});
 
-function find(selector) {
+registerTestHelper('find', function(App, selector) {
   return Ember.$('.ember-application').find(selector);
-}
+});
 
-function wait(value) {
+registerTestHelper('wait', function(App, value) {
   return new Promise(function(resolve) {
     stop();
     var watcher = setInterval(function() {
-      var routerIsLoading = EMBER_APP_BEING_TESTED.__container__.lookup('router:main').router.isLoading;
+      var routerIsLoading = App.__container__.lookup('router:main').router.isLoading;
       if (routerIsLoading) { return; }
-      if (pendingAjaxRequests) { return; }
+      if (App.get('pendingAjaxRequests')) { return; }
       if (Ember.run.hasScheduledTimers() || Ember.run.currentRunLoop) { return; }
       clearInterval(watcher);
       start();
@@ -43,41 +42,4 @@ function wait(value) {
       });
     }, 10);
   });
-}
-
-Ember.Application.reopen({
-  setupForTesting: function() {
-    this.deferReadiness();
-
-    this.Router.reopen({
-      location: 'none'
-    });
-
-    window.EMBER_APP_BEING_TESTED = this;
-  },
-
-  injectTestHelpers: function() {
-    Ember.$(document).ajaxStart(function() {
-      pendingAjaxRequests++;
-    });
-
-    Ember.$(document).ajaxStop(function() {
-      pendingAjaxRequests--;
-    });
-
-    window.visit = visit;
-    window.click = click;
-    window.fillIn = fillIn;
-    originalFind = window.find;
-    window.find = find;
-    window.wait = wait;
-  },
-
-  removeTestHelpers: function() {
-    window.visit = null;
-    window.click = null;
-    window.fillIn = null;
-    window.find = originalFind;
-    window.wait = null;
-  }
 });
