@@ -157,13 +157,13 @@ function curry(app, fn, meta) {
 
     if (!lastPromise) {
       // It's the first async helper in current context
-      lastPromise = applyHelperMethod(fn, app, args);
+      lastPromise = fn.apply(app, args);
     } else {
       // wait for last helper's promise to resolve
       // and then execute
       run(function() {
         lastPromise = lastPromise.then(function() {
-          return applyHelperMethod(fn, app, args);
+          return fn.apply(app, args);
         });
       });
     }
@@ -187,33 +187,6 @@ function run(fn) {
   }
 }
 
-// This method isolates nested helpers
-// so that they don't conflict with other last promises
-function applyHelperMethod(fn, app, args) {
-  var value, lastPromise,
-      prevPromise = Ember.Test.lastPromise;
-
-  // reset lastPromise for nested helpers
-  Ember.Test.lastPromise = null;
-  value = fn.apply(app, args);
-  lastPromise = Ember.Test.lastPromise;
-
-  // If the helper returned a promise
-  // return that promise. If not,
-  // return the last async helper's promise
-  if ((value && value.then) || !lastPromise) {
-    return value;
-  } else {
-    run(function() {
-      lastPromise = lastPromise.then(function() {
-        return value;
-      });
-    });
-    return lastPromise;
-  }
-
-  Ember.Test.lastPromise = prevPromise;
-}
 
 Ember.Application.reopen({
   testHelpers: {},

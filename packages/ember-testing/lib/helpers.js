@@ -64,7 +64,7 @@ function andThen(app, callback) {
 }
 
 function wait(app, value) {
-  return Test.promise(function(resolve) {
+  var p = Test.promise(function(resolve) {
     // If this is the first async promise, kick off the async test
     if (++countAsync === 1) {
       Test.adapter.asyncStart();
@@ -94,6 +94,65 @@ function wait(app, value) {
       Ember.run(null, resolve, value);
     }, 10);
   });
+
+  return buildChainObject(app, p);
+}
+
+function buildChainObject(app, p) {
+
+  var prom = {};
+  for (var i in app.testHelpers) {
+    prom[i] = app.testHelpers[i];
+  }
+
+  prom.then = function(onSuccess, onFailure) {
+    var prev = Ember.Test.lastPromise;
+
+    var thenPromise = p.then(function(val) {
+      return applyHelperMethod(onSuccess, [val]);
+    });
+
+    return buildChainObject(app, thenPromise);
+  };
+
+  return prom;
+}
+
+
+// This method isolates nested helpers
+// so that they don't conflict with other last promises
+function applyHelperMethod(fn, args) {
+  var value, lastPromise,
+      prevPromise = Ember.Test.lastPromise;
+
+  // reset lastPromise for nested helpers
+  Ember.Test.lastPromise = null;
+  value = fn.apply(null, args);
+  lastPromise = Ember.Test.lastPromise;
+
+  // If the helper returned a promise
+  // return that promise. If not,
+  // return the last async helper's promise
+  if ((value && value.then) || !lastPromise) {
+    return value;
+  } else {
+    run(function() {
+      lastPromise = lastPromise.then(function() {
+        return value;
+      });
+    });
+    return lastPromise;
+  }
+
+  Ember.Test.lastPromise = prevPromise;
+}
+
+function run(fn) {
+  if (!Ember.run.currentRunLoop) {
+    Ember.run(fn);
+  } else {
+    fn();
+  }
 }
 
 
