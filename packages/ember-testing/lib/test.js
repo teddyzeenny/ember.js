@@ -23,7 +23,7 @@ Ember.Test = {
     For example:
     ```javascript
     Ember.Test.registerHelper('boot', function(app)) {
-      Ember.run(app, app.deferReadiness);
+      Ember.run(app, app.advanceReadiness);
     }
     ```
 
@@ -36,7 +36,6 @@ Ember.Test = {
       App.injectTestHelpers();
       boot();
     ```
-
     Whenever you register a helper that
     performs async operations,
     make sure you `return wait();` at the
@@ -46,12 +45,30 @@ Ember.Test = {
     pass it to the `wait` helper as a first argument:
     `return wait(val);`
 
+    If a helper is not async and needs to return
+    a value immediately (such as `find`), pass
+    `{ wait: false }` as an option parameter.
+    ```javascript
+    Ember.Test.registerHelper('findPost', function() {
+      return find('.post');
+    }, { wait: false });
+
+    ```
+
     @method registerHelper
     @param name {String}
     @param helperMethod {Function}
+    @param options {Object}
   */
-  registerHelper: function(name, helperMethod) {
-    helpers[name] = helperMethod;
+  registerHelper: function(name, helperMethod, meta) {
+    meta = meta || {};
+    if (meta.wait === undefined) {
+      meta.wait = true;
+    }
+    helpers[name] = {
+      method: helperMethod,
+      meta: meta
+    };
   },
   /**
     @public
@@ -102,6 +119,8 @@ Ember.Test = {
     return new Ember.Test.Promise(resolver);
   },
 
+  lastPromise: null,
+
   /**
    @public
 
@@ -121,12 +140,79 @@ Ember.Test = {
   adapter: null
 };
 
-function curry(app, fn) {
+function curry(app, fn, meta) {
   return function() {
-    var args = slice.call(arguments);
+    var args = slice.call(arguments),
+        wait = app.testHelpers.wait,
+        lastPromise = Ember.Test.lastPromise;
+
     args.unshift(app);
-    return fn.apply(app, args);
+
+    // some helpers are not async and
+    // need to return a value immediately.
+    // example: `find`
+    if (!meta.wait) {
+      return fn.apply(app, args);
+    }
+
+    if (!lastPromise) {
+      // It's the first async helper in current context
+      lastPromise = applyHelperMethod(fn, app, args);
+    } else {
+      // wait for last helper's promise to resolve
+      // and then execute
+      run(function() {
+        lastPromise = lastPromise.then(function() {
+          return applyHelperMethod(fn, app, args);
+        });
+      });
+    }
+
+    // If return value is not thenable
+    // wrap the value in `wait`
+    if (!lastPromise.then) {
+      lastPromise = wait(lastPromise);
+    }
+
+    Ember.Test.lastPromise = lastPromise;
+    return lastPromise;
   };
+}
+
+function run(fn) {
+  if (!Ember.run.currentRunLoop) {
+    Ember.run(fn);
+  } else {
+    fn();
+  }
+}
+
+// This method isolates nested helpers
+// so that they don't conflict with other last promises
+function applyHelperMethod(fn, app, args) {
+  var value, lastPromise,
+      prevPromise = Ember.Test.lastPromise;
+
+  // reset lastPromise for nested helpers
+  Ember.Test.lastPromise = null;
+  value = fn.apply(app, args);
+  lastPromise = Ember.Test.lastPromise;
+
+  // If the helper returned a promise
+  // return that promise. If not,
+  // return the last async helper's promise
+  if ((value && value.then) || !lastPromise) {
+    return value;
+  } else {
+    run(function() {
+      lastPromise = lastPromise.then(function() {
+        return value;
+      });
+    });
+    return lastPromise;
+  }
+
+  Ember.Test.lastPromise = prevPromise;
 }
 
 Ember.Application.reopen({
@@ -139,7 +225,7 @@ Ember.Application.reopen({
       location: 'none'
     });
 
-   // if adapter is not manually set
+    // if adapter is not manually set
     // default to QUnit
     if (!Ember.Test.adapter) {
        Ember.Test.adapter = Ember.Test.QUnitAdapter.create();
@@ -150,8 +236,8 @@ Ember.Application.reopen({
     this.testHelpers = {};
     for (var name in helpers) {
       originalMethods[name] = window[name];
-      this.testHelpers[name] = window[name] = curry(this, helpers[name]);
-      protoWrap(Ember.Test.Promise.prototype, name, curry(this, helpers[name]));
+      this.testHelpers[name] = window[name] = curry(this, helpers[name].method, helpers[name].meta);
+      protoWrap(Ember.Test.Promise.prototype, name, curry(this, helpers[name].method, helpers[name].meta));
     }
 
     for(var i = 0, l = injectHelpersCallbacks.length; i < l; i++) {
@@ -172,12 +258,12 @@ Ember.Application.reopen({
 
 });
 
+// This method is no longer needed
+// But still here for backwards compatibility
 function protoWrap(proto, name, callback) {
   proto[name] = function() {
     var args = arguments;
-    return this.then(function() {
-      callback.apply(this, args);
-    });
+    return callback.apply(this, args);
   };
 }
 
