@@ -9,6 +9,7 @@ module("Ember.Application – logging of generated classes", {
     Ember.Logger.info = function(){
       var fullName = arguments[1].fullName;
 
+      console.log.apply(console, arguments);
       logs[fullName] = logs[fullName] || 0;
       logs[fullName]++;
     };
@@ -25,6 +26,8 @@ module("Ember.Application – logging of generated classes", {
       App.Router.map(function() {
         this.resource("posts");
       });
+
+      App.PostsRoute = Ember.Route.extend();
 
       App.deferReadiness();
     });

@@ -1926,7 +1926,7 @@ test("The template is not re-rendered when two routes present the exact same tem
   handleURL("/first");
 
   equal(Ember.$('p', '#qunit-fixture').text(), "This is the first message");
-  equal(insertionCount, 1);
+  equal(insertionCount, 1, 'expected one assertion');
 
   // Transition by URL
   handleURL("/second");
@@ -1936,7 +1936,11 @@ test("The template is not re-rendered when two routes present the exact same tem
 
   // Then transition directly by route name
   Ember.run(function() {
-    router.transitionTo('third');
+    router.transitionTo('third').then(function(value){
+      ok(true, 'expected transition');
+    }, function(reason) {
+      ok(false, 'unexpected transition failure: ', QUnit.jsDump.parse(reason));
+    });
   });
 
   equal(Ember.$('p', '#qunit-fixture').text(), "This is the third message");
@@ -1947,7 +1951,6 @@ test("The template is not re-rendered when two routes present the exact same tem
 
   equal(Ember.$('p', '#qunit-fixture').text(), "This is the fourth message");
   equal(insertionCount, 2, "view should have inserted a second time");
-
 });
 
 test("ApplicationRoute with model does not proxy the currentPath", function() {

@@ -152,7 +152,7 @@ Ember.Router = Ember.Object.extend({
 
 function getHandlerFunction(router) {
   var seen = {}, container = router.container,
-      DefaultRoute = container.resolve('route:basic');
+      DefaultRoute = container.lookupFactory('route:basic');
 
   return function(name) {
     var routeName = 'route:' + name,
@@ -165,7 +165,7 @@ function getHandlerFunction(router) {
     if (!handler) {
       if (name === 'loading') { return {}; }
 
-      container.register(routeName, DefaultRoute.extend());
+      container.register(routeName, DefaultRoute);
       handler = container.lookup(routeName);
 
       if (get(router, 'namespace.LOG_ACTIVE_GENERATION')) {

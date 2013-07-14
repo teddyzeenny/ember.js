@@ -661,13 +661,26 @@ define("container",
         return factory;
       } else {
 
-        injectedFactory = factory.reopen({
-          container: container,
-          _debugContainerKey: fullName
-          // other factory. injections
-        });
+        console.log(fullName);
 
-        debugger;
+        if( fullName === 'router:main' ||
+            fullName === "route:application" ||
+            fullName === 'route:index') {
+
+          console.log('reopen', fullName);
+          injectedFactory = factory.reopen({
+            container: container,
+            _debugContainerKey: fullName
+            // other factory. injections
+          });
+        } else {
+          console.log('extend', fullName);
+          injectedFactory = factory.extend({
+            container: container,
+            _debugContainerKey: fullName
+            // other factory. injections
+          });
+        }
 
         cache.set(fullName, injectedFactory);
 

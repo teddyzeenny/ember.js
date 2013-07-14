@@ -35,6 +35,7 @@ Ember.View.reopen({
 
   _hasEquivalentView: function(outletName, view) {
     var existingView = get(this, '_outlets.'+outletName);
+    debugger;
     return existingView &&
       existingView.constructor === view.constructor &&
       existingView.get('template') === view.get('template') &&
