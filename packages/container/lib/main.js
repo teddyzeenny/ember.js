@@ -125,6 +125,7 @@ define("container",
       this.resolver = parent && parent.resolver || function() {};
       this.registry = new InheritingDict(parent && parent.registry);
       this.cache = new InheritingDict(parent && parent.cache);
+      this.factoryCache = new InheritingDict(parent && parent.cache);
       this.typeInjections = new InheritingDict(parent && parent.typeInjections);
       this.injections = {};
       this._options = new InheritingDict(parent && parent._options);
@@ -646,7 +647,32 @@ define("container",
 
     function factoryFor(container, fullName) {
       var name = container.normalize(fullName);
-      return container.resolve(name);
+      var factory = container.resolve(name);
+      var injectedFactory;
+      var cache = container.factoryCache;
+
+      if (!factory) { return; }
+
+      if (cache.has(fullName)){
+        return cache.get(fullName);
+      }
+
+      if (option(container, fullName, 'instantiate') === false) {
+        return factory;
+      } else {
+
+        injectedFactory = factory.reopen({
+          container: container,
+          _debugContainerKey: fullName
+          // other factory. injections
+        });
+
+        debugger;
+
+        cache.set(fullName, injectedFactory);
+
+        return injectedFactory;
+      }
     }
 
     function instantiate(container, fullName) {
@@ -666,8 +692,6 @@ define("container",
         injections = injections.concat(container.injections[fullName] || []);
 
         var hash = buildInjections(container, injections);
-        hash.container = container;
-        hash._debugContainerKey = fullName;
 
         value = factory.create(hash);
 
