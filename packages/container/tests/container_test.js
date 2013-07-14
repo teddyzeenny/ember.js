@@ -210,10 +210,7 @@ test("An individual factory with a registered injection receives the injection",
 
   equal(postController.container, container);
   equal(postController._debugContainerKey, 'controller:post');
-
-  deepEqual(passedOptions, {
-    store: store
-  });
+  equal(postController.store, store, 'has the correct store injected');
 });
 
 test("A factory with both type and individual injections", function() {

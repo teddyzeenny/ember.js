@@ -611,6 +611,7 @@ define("container",
 
     function buildInjections(container, injections) {
       var hash = {};
+      hash.container = container;
 
       if (!injections) { return hash; }
 
@@ -653,34 +654,27 @@ define("container",
 
       if (!factory) { return; }
 
-      if (cache.has(fullName)){
+      if (cache.has(fullName)) {
         return cache.get(fullName);
       }
 
       if (option(container, fullName, 'instantiate') === false) {
+        // TODO: workaround
         return factory;
       } else {
+        var splitName = fullName.split(":"),
+          type = splitName[0],
+          injections = [];
 
-        console.log(fullName);
+        injections = injections.concat(container.typeInjections.get(type) || []);
+        injections = injections.concat(container.injections[fullName] || []);
 
-        if( fullName === 'router:main' ||
-            fullName === "route:application" ||
-            fullName === 'route:index') {
+        var injections = buildInjections(container, injections);
+        injections._debugContainerKey = fullName;
 
-          console.log('reopen', fullName);
-          injectedFactory = factory.reopen({
-            container: container,
-            _debugContainerKey: fullName
-            // other factory. injections
-          });
-        } else {
-          console.log('extend', fullName);
-          injectedFactory = factory.extend({
-            container: container,
-            _debugContainerKey: fullName
-            // other factory. injections
-          });
-        }
+        injectedFactory = factory.extend(injections);
+
+        // injectedFactory.reopenClass({} /* TODO: classInjections */);
 
         cache.set(fullName, injectedFactory);
 
@@ -691,24 +685,13 @@ define("container",
     function instantiate(container, fullName) {
       var factory = factoryFor(container, fullName);
 
-      var splitName = fullName.split(":"),
-          type = splitName[0],
-          value;
-
+      // TODO: these should likely all be factoryInjections
       if (option(container, fullName, 'instantiate') === false) {
         return factory;
       }
 
       if (factory) {
-        var injections = [];
-        injections = injections.concat(container.typeInjections.get(type) || []);
-        injections = injections.concat(container.injections[fullName] || []);
-
-        var hash = buildInjections(container, injections);
-
-        value = factory.create(hash);
-
-        return value;
+        return factory.create();
       }
     }
 
