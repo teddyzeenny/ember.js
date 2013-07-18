@@ -16,7 +16,7 @@ module("Application Lifecycle", {
       container = App.__container__;
     });
 
-    router = container.lookup('router:main');
+
   },
 
   teardown: function() {
@@ -26,6 +26,7 @@ module("Application Lifecycle", {
 });
 
 function handleURL(path) {
+  router = container.lookup('router:main');
   return Ember.run(function() {
     return router.handleURL(path).then(function(value) {
       ok(true, 'url: `' + path + '` was handled');

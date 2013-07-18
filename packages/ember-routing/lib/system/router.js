@@ -299,11 +299,13 @@ function transitionCompleted(router) {
 }
 
 Ember.Router.reopenClass({
+  router: null,
   map: function(callback) {
     var router = this.router;
     if (!router){
-      router = this.router = new Router();
+      router = new Router();
       router.callbacks = [];
+      this.reopenClass({ router: router });
     }
 
     if (get(this, 'namespace.LOG_TRANSITIONS_INTERNAL')) {

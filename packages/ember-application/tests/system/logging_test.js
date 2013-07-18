@@ -27,8 +27,6 @@ module("Ember.Application – logging of generated classes", {
         this.resource("posts");
       });
 
-      App.PostsRoute = Ember.Route.extend();
-
       App.deferReadiness();
     });
   },
