@@ -212,9 +212,11 @@ test("Aborted transitions are not logged via Ember.Test.adapter#exception", func
 test("Unhandled exceptions are logged via Ember.Test.adapter#exception", function () {
   expect(2);
 
+  var asyncHandled;
   Ember.Test.adapter = Ember.Test.QUnitAdapter.create({
     exception: function(error) {
       equal(error.message, "Element .does-not-exist not found.", "Exception successfully caught and passed to Ember.Test.adapter.exception");
+      asyncHandled.fail(function(){ }); // handle the rejection so it doesn't leak later.
     }
   });
 
@@ -224,5 +226,5 @@ test("Unhandled exceptions are logged via Ember.Test.adapter#exception", functio
     equal(error.message, "Element .invalid-element not found.", "Exception successfully handled in the rejection handler");
   });
 
-  click(".does-not-exist");
+  asyncHandled = click(".does-not-exist");
 });

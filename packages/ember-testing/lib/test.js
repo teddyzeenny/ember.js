@@ -503,6 +503,6 @@ function isolate(fn, val) {
   }
 }
 
-function onerror(event) {
-  Ember.Test.adapter.exception(event.detail);
+function onerror(error) {
+  Ember.Test.adapter.exception(error);
 }
