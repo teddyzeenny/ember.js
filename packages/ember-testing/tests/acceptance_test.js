@@ -92,7 +92,7 @@ test("helpers can be chained with then", function() {
     return fillIn('.ember-text-field', '#ember-testing-container', "context working");
   }).then(function() {
     equal(Ember.$('.ember-text-field').val(), 'context working', "chained with fillIn");
-    click(".does-not-exist");
+    return click(".does-not-exist");
   }).then(null, function(e) {
     equal(e.message, "Element .does-not-exist not found.", "Non-existent click exception caught");
   });

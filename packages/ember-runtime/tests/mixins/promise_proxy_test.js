@@ -146,6 +146,9 @@ test("rejection", function(){
 test("unhandled rejects still propogate to RSVP.on('error', ...) ", function(){
   expect(1);
 
+  Ember.RSVP.on('error', onerror);
+  Ember.RSVP.off('error', Ember.RSVP.onerrorDefault);
+
   var expectedReason = new Error("failure");
   var deferred = Ember.RSVP.defer();
 
@@ -155,12 +158,9 @@ test("unhandled rejects still propogate to RSVP.on('error', ...) ", function(){
 
   var promise = proxy.get('promise');
 
-  function onerror(reason){
+  function onerror(reason) {
     equal(reason, expectedReason, 'expected reason');
   }
-
-  Ember.RSVP.on('error', onerror);
-  Ember.RSVP.off('error', Ember.RSVP.onerrorDefault);
 
   try {
     Ember.run(deferred, 'reject', expectedReason);
