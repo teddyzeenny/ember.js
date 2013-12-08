@@ -162,13 +162,8 @@ test("unhandled rejects still propogate to RSVP.on('error', ...) ", function(){
     equal(reason, expectedReason, 'expected reason');
   }
 
-  try {
-    Ember.run(deferred, 'reject', expectedReason);
-  } catch(error) {
-    Ember.RSVP.on('error', Ember.RSVP.onerrorDefault);
-    Ember.RSVP.off('error', onerror);
-
-    throw error;
-  }
+  Ember.run(deferred, 'reject', expectedReason);
+  Ember.RSVP.on('error', Ember.RSVP.onerrorDefault);
+  Ember.RSVP.off('error', onerror);
 });
 
