@@ -167,7 +167,10 @@ Ember.deprecateFunc = function(message, func) {
 if (!Ember.testing) {
   if (typeof window !== 'undefined' && window.chrome && window.addEventListener) {
     window.addEventListener("load", function() {
-      if (document.body && document.body.dataset && !document.body.dataset.emberExtension) {
+      var installed = (document.documentElement.dataset && document.documentElement.dataset.emberExtension)
+      || (document.body && document.body.dataset && document.body.dataset.emberExtension);
+
+      if (!installed) {
         Ember.debug('For more advanced debugging, install the Ember Inspector from https://chrome.google.com/webstore/detail/ember-inspector/bmdblncegkenkacieihfhpjfppoconhi');
       }
     }, false);
