@@ -438,7 +438,7 @@ GroupedEach.prototype = {
   @param [options.groupedRows] {boolean} enable normal item-by-item rendering when inside a `#group` helper
 */
 function eachHelper(path, options) {
-  var ctx;
+  var ctx, helperName = 'each';
 
   if (arguments.length === 4) {
     Ember.assert("If you pass more than one argument to the each helper, it must be in the form #each foo in bar", arguments[1] === "in");
@@ -455,6 +455,8 @@ function eachHelper(path, options) {
   if (arguments.length === 1) {
     options = path;
     path = 'this';
+  } else {
+    helperName += ' ' + path;
   }
 
   options.hash.dataSourceBinding = path;
@@ -464,7 +466,7 @@ function eachHelper(path, options) {
   // can't rely on this default behavior when use strict
   ctx = this || window;
 
-  options.helperName = options.helperName || 'each ' + path;
+  options.helperName = options.helperName || helperName;
 
   if (options.data.insideGroup && !options.hash.groupedRows && !options.hash.itemViewClass) {
     new GroupedEach(ctx, path, options).render();
