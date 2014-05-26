@@ -22,6 +22,7 @@ import copy from "ember-runtime/copy";
 import run from "ember-metal/run_loop";
 import { on } from "ember-metal/events";
 import { handlebarsGet } from "ember-handlebars/ext";
+import { computed } from "ember-metal/computed";
 
 import {
   addObserver,
@@ -36,7 +37,11 @@ import {
 } from "ember-handlebars/views/metamorph_view";
 
 var EachView = CollectionView.extend(_Metamorph, {
-  instrumentDisplay: '{{each}}',
+  instrumentDisplay: computed(function() {
+    if (this.helperName) {
+      return '{{' + this.helperName + '}}';
+    }
+  }),
 
   init: function() {
     var itemController = get(this, 'itemController');
@@ -459,7 +464,7 @@ function eachHelper(path, options) {
   // can't rely on this default behavior when use strict
   ctx = this || window;
 
-  options.helperName = options.helperName || 'each';
+  options.helperName = options.helperName || 'each ' + path;
 
   if (options.data.insideGroup && !options.hash.groupedRows && !options.hash.itemViewClass) {
     new GroupedEach(ctx, path, options).render();
