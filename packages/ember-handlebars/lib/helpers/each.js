@@ -445,14 +445,17 @@ function eachHelper(path, options) {
 
     var keywordName = arguments[0];
 
+
     options = arguments[3];
     path = arguments[2];
+
+    helperName += ' ' + keywordName + ' in ' + path;
+
     if (path === '') { path = "this"; }
 
     options.hash.keyword = keywordName;
-  }
 
-  if (arguments.length === 1) {
+  } else if (arguments.length === 1) {
     options = path;
     path = 'this';
   } else {
