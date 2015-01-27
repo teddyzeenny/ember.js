@@ -292,28 +292,22 @@ function helper(app, name) {
       return fn.apply(app, args);
     }
 
-    if (!lastPromise) {
-      // It's the first async helper in current context
-      lastPromise = fn.apply(app, args);
-    } else {
-      // wait for last helper's promise to resolve
-      // and then execute
-      run(function() {
-        lastPromise = Test.resolve(lastPromise).then(function() {
-          return fn.apply(app, args);
-        });
+    Test.adapter.asyncStart();
+    return run(function() {
+      return Test.resolve(lastPromise).then(function() {
+        return fn.apply(app, args);
+      }).finally(function() {
+        Ember.Test.adapter.asyncEnd();
       });
-    }
-
-    return lastPromise;
+    });
   };
 }
 
 function run(fn) {
   if (!emberRun.currentRunLoop) {
-    emberRun(fn);
+    return emberRun(fn);
   } else {
-    fn();
+    return fn();
   }
 }
 
@@ -477,6 +471,7 @@ Test.Promise = function() {
 
 Test.Promise.prototype = create(RSVP.Promise.prototype);
 Test.Promise.prototype.constructor = Test.Promise;
+Test.Promise.resolve = Test.resolve;
 
 // Patch `then` to isolate async methods
 // specifically `Ember.Test.lastPromise`
